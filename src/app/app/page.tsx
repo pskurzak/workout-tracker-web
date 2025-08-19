@@ -20,7 +20,6 @@ function DashboardInner() {
     },
   });
 
-  const getName = useSessionNameStore((s) => s.getName);
 
   if (isLoading) return <main className="p-6">Loading workouts…</main>;
   if (isError) {
