@@ -1,13 +1,26 @@
-export default function Page() {
+// src/app/page.tsx
+import Link from "next/link";
+
+export default function Home() {
   return (
-    <main className="min-h-dvh grid place-items-center p-8 text-center">
-      <div>
-        <h1 className="text-3xl font-bold">Workout Tracker</h1>
-        <p className="mt-2 opacity-80">Simple. Fast. Yours.</p>
-        <a className="mt-6 inline-block underline" href="/app">Open the app →</a>
-        <footer className="mt-10 text-xs opacity-60">
-          <a className="underline" href="/privacy">Privacy Policy</a> · <a className="underline" href="mailto:you@domain.com">Contact</a>
-        </footer>
+    <main className="p-8">
+      <h1 className="text-3xl font-bold mb-6">Workout Tracker</h1>
+
+      <div className="space-x-4">
+        <Link
+          href="/app/"
+          className="inline-block rounded px-4 py-2 border"
+        >
+          Open the app
+        </Link>
+
+        <a
+          href="https://nextjs.org/docs"
+          className="inline-block rounded px-4 py-2 border"
+          target="_blank" rel="noreferrer"
+        >
+          Read the docs
+        </a>
       </div>
     </main>
   );
