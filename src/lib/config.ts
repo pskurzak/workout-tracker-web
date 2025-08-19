@@ -1,1 +1,1 @@
-export const USE_API = false; // set to true once backend is ready
+export const USE_API = true; // set to true once backend is ready

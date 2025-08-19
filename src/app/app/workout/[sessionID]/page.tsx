@@ -10,24 +10,24 @@ import { useSessionNameStore } from "@/lib/sessionNames";
 import { USE_API } from "@/lib/config";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { useSessionEntries, useAddEntry, useDeleteEntry } from "@/lib/queries";
 
 export default function SessionPage() {
   const params = useParams<{ sessionID: string }>();
   const sessionID = (params?.sessionID as string) ?? "";
   const qc = useQueryClient();
 
-  // Entries (mock for now; switch to API later)
-  const { data: entries = [] } = useQuery({
-    queryKey: ["session", sessionID, "entries", USE_API],
+  // Entries: call both hooks but enable only the active one to satisfy hook rules
+  const liveEntries = useSessionEntries(sessionID, !!USE_API);
+  const mockEntries = useQuery({
+    queryKey: ["session", sessionID, "entries", "mock"],
     queryFn: async () => {
       if (!sessionID) return [] as Workout[];
-      if (!USE_API) return getSessionEntries(sessionID);
-      // Live mode later:
-      // return (await api.get<Workout[]>(`/workouts/?session_id=${sessionID}`)).data;
       return getSessionEntries(sessionID);
     },
-    enabled: !!sessionID,
+    enabled: !!sessionID && !USE_API,
   });
+  const entries: Workout[] = (USE_API ? liveEntries.data : mockEntries.data) ?? [];
 
   // Session name with server-backed rename
   const storedName = useSessionNameStore((s) => s.getName(sessionID));
@@ -59,6 +59,11 @@ export default function SessionPage() {
 
   // Add entry (mock; optimistic)
   const [newEntry, setNewEntry] = useState({ exercise: 3, sets: 3, reps: 10, weight: "" });
+
+  // Live hooks for add/delete when API is enabled
+  const addLive = useAddEntry(sessionID, () => setNewEntry({ exercise: 3, sets: 3, reps: 10, weight: "" }));
+  const delLive = useDeleteEntry(sessionID);
+
   const addMutation = useMutation({
     mutationFn: async (payload: { exercise: number; sets: number; reps: number; weight: string }) => {
       const now = new Date().toISOString();
@@ -87,6 +92,27 @@ export default function SessionPage() {
       qc.setQueryData<Workout[]>(["session", sessionID, "entries", USE_API], (prev = []) => prev.filter(e => e.id !== id));
     },
   });
+
+  function onAdd() {
+    if (USE_API) {
+      addLive.mutate({
+        exercise_id: newEntry.exercise,
+        sets: newEntry.sets,
+        reps: newEntry.reps,
+        weight: newEntry.weight ? Number(newEntry.weight) : null,
+      });
+    } else {
+      addMutation.mutate(newEntry);
+    }
+  }
+
+  function onDelete(id: number) {
+    if (USE_API) {
+      delLive.mutate(id);
+    } else {
+      deleteMutation.mutate(id);
+    }
+  }
 
   return (
     <main className="p-6 space-y-6">
@@ -158,7 +184,7 @@ export default function SessionPage() {
         </div>
         <button
           className="border rounded px-3 py-2 mt-2"
-          onClick={() => addMutation.mutate(newEntry)}
+          onClick={onAdd}
         >
           Add entry
         </button>
@@ -188,7 +214,7 @@ export default function SessionPage() {
                 <td className="p-3">
                   <button
                     className="border rounded px-2 py-1"
-                    onClick={() => deleteMutation.mutate(e.id)}
+                    onClick={() => onDelete(e.id)}
                   >
                     Delete
                   </button>

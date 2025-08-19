@@ -1,37 +1,40 @@
 "use client";
+
 import { useState } from "react";
+import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
 import { toast } from "sonner";
 
 export default function LoginPage() {
-  const [token, setToken] = useState("");
-  const setAuth = useAuthStore((s) => s.setToken);
+  const [username, setU] = useState("");
+  const [password, setP] = useState("");
+  const setToken = useAuthStore(s => s.setToken);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      const { data } = await api.post<{ token: string; user: { id: number; username: string } }>(
+        "/auth/login/",
+        { username, password }
+      );
+      setToken(data.token);
+      toast.success("Logged in");
+      window.location.href = "/app";
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || "Login failed";
+      toast.error(msg);
+    }
+  }
 
   return (
     <main className="min-h-dvh grid place-items-center p-6">
-      <div className="w-full max-w-sm">
-        <h1 className="text-xl font-semibold">Paste API Token</h1>
-        <p className="text-sm opacity-70 mt-1">
-          Temporary: paste your DRF token to try the web app. We’ll add username/password next.
-        </p>
-        <input
-          className="mt-4 w-full border rounded p-2"
-          placeholder="Token …"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-        />
-        <button
-          className="mt-3 w-full border rounded p-2 hover:bg-black/5"
-          onClick={() => {
-            if (!token.trim()) return toast.error("Token required");
-            setAuth(token.trim());
-            toast.success("Token saved");
-            window.location.href = "/app";
-          }}
-        >
-          Continue
-        </button>
-      </div>
+      <form onSubmit={handleLogin} className="w-full max-w-sm space-y-3">
+        <h1 className="text-xl font-semibold">Sign in</h1>
+        <input className="border rounded p-2 w-full" placeholder="Username" value={username} onChange={e=>setU(e.target.value)} />
+        <input className="border rounded p-2 w-full" type="password" placeholder="Password" value={password} onChange={e=>setP(e.target.value)} />
+        <button className="border rounded p-2 w-full" disabled={!username || !password}>Sign in</button>
+        <p className="text-sm opacity-70">Don’t have an account? (We can add register later.)</p>
+      </form>
     </main>
   );
 }
